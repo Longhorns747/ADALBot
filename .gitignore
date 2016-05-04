@@ -1,0 +1,8 @@
+*.config
+bin/*
+obj/*
+PublishProfiles/*
+App_Start/*
+*.asax
+*.asax.cs
+*.csproj.user
