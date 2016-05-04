@@ -6,3 +6,4 @@ App_Start/*
 *.asax
 *.asax.cs
 *.csproj.user
+Properties/*
