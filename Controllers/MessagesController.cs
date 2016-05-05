@@ -56,9 +56,18 @@ namespace TestBot
                 {
                     return message.CreateReplyMessage($"Hi Ahmed!");
                 }
+                //Test Self Identification
+                else if(message.Text.Equals("Who am I?"))
+                {
+                    return message.CreateReplyMessage(await GetUserInfoAsync(ar.AccessToken));
+                }
+                else if(message.Text.StartsWith("Hello"))
+                {
+                    return message.CreateReplyMessage("Hi " + await GetNameAsync(ar.AccessToken) + "!");
+                }
 
                 // return our reply to the user
-                return message.CreateReplyMessage(await GetUserInfoAsync(ar.AccessToken));
+                return message.CreateReplyMessage("Sorry, I don't know how to answer that!");
             }
             else
             {
@@ -128,8 +137,41 @@ namespace TestBot
                 }
             }
 
-            //return accessToken + " " + raw;
             return "Name: " + name + " Address: " + address;
+        }
+
+        //TODO: Refactor connection code
+        //Retrieve just the name of the current user
+        private async Task<String> GetNameAsync(string accessToken)
+        {
+            String name = "";
+            String address = "";
+            String raw = "";
+
+            using (var client = new HttpClient())
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, "https://graph.microsoft.com/v1.0/me"))
+                {
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    using (var response = await client.SendAsync(request))
+                    {
+                        if (response.StatusCode == HttpStatusCode.OK)
+                        {
+                            var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                            name = json?["displayName"]?.ToString();
+                            address = json?["mail"]?.ToString().Trim().Replace(" ", string.Empty);
+                        }
+                        else
+                        {
+                            raw = (await response.Content.ReadAsStringAsync());
+                        }
+                    }
+                }
+            }
+
+            return name;
         }
     }
 }
