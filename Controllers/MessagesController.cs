@@ -11,6 +11,8 @@ using Newtonsoft.Json;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
+using System.Collections.Generic;
+using System.Collections;
 
 namespace TestBot
 {
@@ -64,6 +66,10 @@ namespace TestBot
                 else if(message.Text.StartsWith("Hello"))
                 {
                     return message.CreateReplyMessage("Hi " + await GetNameAsync(ar.AccessToken) + "!");
+                }
+                else if(message.Text.StartsWith("Search: "))
+                {
+                    return message.CreateReplyMessage(await SearchODBAsync(ar.AccessToken, message.Text.Substring(7).Trim()));
                 }
 
                 // return our reply to the user
@@ -172,6 +178,52 @@ namespace TestBot
             }
 
             return name;
+        }
+
+        //Search for ODB files
+        private async Task<String> SearchODBAsync(string accessToken, string searchQuery)
+        {
+            ArrayList results = new ArrayList();
+            String result = "";
+            String raw = "";
+            String url = Uri.EscapeUriString("https://graph.microsoft.com/v1.0/me/drive/root/search(q='" + searchQuery + "')");
+
+            using (var client = new HttpClient())
+            {
+                using (var request = new HttpRequestMessage(HttpMethod.Get, url))
+                {
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                    using (var response = await client.SendAsync(request))
+                    {
+                        if (response.StatusCode == HttpStatusCode.OK)
+                        {
+                            var json = JObject.Parse(await response.Content.ReadAsStringAsync());
+                            JToken[] items = json?["value"]?.ToArray();
+                            
+                            foreach (JToken item in items)
+                            {
+                                Dictionary<String, String> driveItem = new Dictionary<string, string>();
+                                driveItem.Add("filename", item?["name"]?.ToString());
+                                driveItem.Add("url", item?["webUrl"]?.ToString());
+                                results.Add(driveItem);
+                            }
+
+                            foreach (Dictionary<String, String> driveItem in results)
+                            {
+                                result += driveItem["filename"] + ": " + driveItem["url"] + "\n";
+                            }
+                        }
+                        else
+                        {
+                            raw = (await response.Content.ReadAsStringAsync());
+                        }
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }
