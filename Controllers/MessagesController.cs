@@ -51,33 +51,35 @@ namespace TestBot
             }
 
             //Handle general messages
-            if (message.Type == "Message")
+            if (message.Type == "Message" && !message.From.ChannelId.Equals("slack") || (message.From.ChannelId.Equals("slack") && message.Mentions.Count > 0 && message.Mentions[0].Text.Contains(Constants.botName)))
             {
+                string request = message.Text.Trim();
+                
                 //lol
-                if(message.Text.Equals("Say hi to Ahmed"))
+                if(request.Equals("Say hi to Ahmed"))
                 {
-                    return message.CreateReplyMessage($"Hi Ahmed!");
+                    return message.CreateReplyMessage("Hi Ahmed!");
                 }
                 //Test Self Identification
-                else if(message.Text.Equals("Who am I?"))
+                else if(request.Equals("Who am I?"))
                 {
                     return message.CreateReplyMessage(await GetUserInfoAsync(ar.AccessToken));
                 }
-                else if(message.Text.StartsWith("Hello"))
+                else if(request.StartsWith("Hello"))
                 {
                     return message.CreateReplyMessage("Hi " + await GetNameAsync(ar.AccessToken) + "!");
                 }
-                else if(message.Text.StartsWith("Search: "))
+                else if(request.StartsWith("Search: "))
                 {
-                    return message.CreateReplyMessage(await SearchODBAsync(ar.AccessToken, message.Text.Substring(7).Trim()));
+                    return message.CreateReplyMessage(await SearchODBAsync(ar.AccessToken, request.Substring(7).Trim()));
                 }
 
                 // return our reply to the user
-                return message.CreateReplyMessage("Sorry, I don't know how to answer that!");
+                return message.CreateReplyMessage("Sorry, I don't know how to answer that! Here's what I heard: " + request);
             }
             else
             {
-                return HandleSystemMessage(message);
+                return message.CreateReplyMessage();
             }
         }
 
@@ -184,7 +186,7 @@ namespace TestBot
         private async Task<String> SearchODBAsync(string accessToken, string searchQuery)
         {
             ArrayList results = new ArrayList();
-            String result = "";
+            String result = "Here's what I found in your ODB: ";
             String raw = "";
             String url = Uri.EscapeUriString("https://graph.microsoft.com/v1.0/me/drive/root/search(q='" + searchQuery + "')");
 
@@ -212,8 +214,9 @@ namespace TestBot
 
                             foreach (Dictionary<String, String> driveItem in results)
                             {
-                                result += driveItem["filename"] + ": " + driveItem["url"] + "\n";
+                                result += "[" + driveItem["filename"] + "]" + "(" + driveItem["url"] + "), ";
                             }
+                            result.Trim(',');
                         }
                         else
                         {

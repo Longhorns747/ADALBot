@@ -36,7 +36,6 @@ namespace TestBot.Controllers
                 getData.Data = ar.Serialize();
                 var foo = await client.Bots.SetUserDataAsync(Constants.botId, userid, getData);
 
-                //return Request.CreateResponse(foo);
                 var response = Request.CreateResponse(HttpStatusCode.Moved);
                 response.Headers.Location = new Uri("/loggedin.htm", UriKind.Relative);
                 return response;

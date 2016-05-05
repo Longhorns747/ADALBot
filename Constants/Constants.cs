@@ -17,5 +17,7 @@ namespace TestBot
         internal static string botId = ConfigurationManager.AppSettings["AppId"];
 
         internal static string botSecret = ConfigurationManager.AppSettings["AppSecret"];
+
+        internal static string botName = ConfigurationManager.AppSettings["botName"];
     }
 }
